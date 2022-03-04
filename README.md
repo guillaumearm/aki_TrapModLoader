@@ -1,6 +1,6 @@
 # TrapModLoader for spt-aki
 
-a tool for modpack maker that allow to change the mod load order and prevent duplicates mods.
+a tool for modpack maker that allow to change the mod loading order and prevent duplicates mods.
 
 ## Description
 
