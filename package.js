@@ -1,9 +1,13 @@
 "use strict";
 
-const modPackage = require("./package.json")
+const fs = require('fs');
+const path = require('path');
+const modPackage = require("./package.json");
 const basename = require('path').basename;
 
 const TRAP_MODLOADER = basename(__dirname);
+
+const ATF_ID = 'AdvancedTraderFramework';
 
 function importMods() {
     // get mods
@@ -70,6 +74,78 @@ function importMods() {
     for (const mod of mods) {
         ModLoader.addMod(mod);
     }
+
+    return;
+}
+
+function getModlist() {
+    // if loadorder.json exists: load it, otherwise generate load order
+    if (VFS.exists(`${ModLoader.basepath}loadorder.json`)) {
+        return JsonUtil.deserialize(VFS.readFile(`${ModLoader.basepath}loadorder.json`));
+    }
+    else {
+        return Object.keys(ModLoader.getLoadOrder(ModLoader.imported));
+    }
+}
+
+function executeMods(modlist) {
+    // import mod classes
+    for (const mod of modlist) {
+        if ("main" in ModLoader.imported[mod]) {
+            ModLoader.importClass(mod, `${ModLoader.getModPath(mod)}${ModLoader.imported[mod].main}`);
+        }
+    }
+}
+
+function loadMods() {
+    // load mods
+    for (const mod in ModLoader.onLoad) {
+        ModLoader.onLoad[mod]();
+    }
+
+    // update the handbook lookup with modded items
+    HandbookController.load();
+}
+
+function getATFModname(modlist) {
+    for (const mod of modlist) {
+        if (ModLoader.imported[mod].name === ATF_ID) {
+            return mod;
+        }
+    }
+}
+
+function hijackATFexportPresetsMethod(ATFClass) {
+    const modPath = path.normalize(path.join(__dirname, '..'));
+
+    ATFClass.exportPresets = (keyword = 'export') => {
+        let presetList = {};
+        let profilesPath = path.normalize(path.join(modPath, '../profiles/'));
+
+        let profileIDs = fs.readdirSync(profilesPath);
+        Logger.info("ATF: Profiles:  " + profileIDs + "  found");
+
+        profileIDs.forEach(profileFileName => {
+            if (path.extname(profileFileName) == ".json") {
+                let profile = require(profilesPath + profileFileName);
+                if (profile.weaponbuilds != undefined) {
+                    Object.values(profile.weaponbuilds).map((preset) => {
+                        if (preset.name.includes(keyword)) {
+                            presetList[preset.name] = Mod.convertPresetToTrade(preset);
+                        }
+                    });
+                }
+            }
+        });
+
+        let allPresetNames = Object.keys(presetList);
+
+        Object.values(allPresetNames).map((presetName) => {
+            Mod.writeFile(modPath + "/utility/exportedPresets/" + presetName + ".json", JSON.stringify(presetList[presetName], null, "\t"));
+            Logger.info("ATF: Exporting Preset: " + presetName);
+        });
+
+    }
 }
 
 class TrapModLoader {
@@ -88,7 +164,19 @@ class TrapModLoader {
         this.hijackModLoader();
 
         importMods();
-        ModLoader.executeMods();
+
+        const modlist = getModlist();
+        executeMods(modlist);
+
+        const atfModname = getATFModname(modlist);
+
+        // if Advanced Trader Framework mod is installed
+        if (atfModname) {
+            hijackATFexportPresetsMethod(globalThis[atfModname].mod.constructor)
+            Logger.success('=> TrapModLoader: AdvancedTraderFramework exportPresets method hijacked');
+        }
+
+        loadMods()
 
         this.restoreModLoader();
     }
