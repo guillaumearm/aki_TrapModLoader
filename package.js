@@ -81,14 +81,13 @@ class TrapModLoader {
         Logger.info(`Loading: ${modPackage.name} v${modPackage.version}`);
 
         ModLoader.onLoad[modPackage.name] = this.onLoad.bind(this);
-
     }
 
 
     onLoad() {
         this.hijackModLoader();
 
-        ModLoader.importMods();
+        importMods();
         ModLoader.executeMods();
 
         this.restoreModLoader();
@@ -100,13 +99,11 @@ class TrapModLoader {
         }
 
         // save
-        this.saved.importMods = ModLoader.importMods;
         this.saved.basePath = ModLoader.basePath;
         this.saved.imported = ModLoader.imported;
         this.saved.onLoad = ModLoader.onLoad;
 
         // hijack
-        ModLoader.importMods = importMods;
         ModLoader.basepath = `user/mods/${TRAP_MODLOADER}/mods/`;
         ModLoader.imported = {};
         ModLoader.onLoad = {};
@@ -119,7 +116,6 @@ class TrapModLoader {
             return;
         }
 
-        ModLoader.importMods = this.saved.importMods;
         ModLoader.basePath = this.saved.basePath;
         ModLoader.imported = this.saved.imported;
         ModLoader.onLoad = this.saved.onLoad;
