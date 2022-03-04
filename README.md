@@ -1,6 +1,6 @@
 # TrapModLoader for spt-aki
 
-a Tools for modpack maker
+a tool for modpack maker
 
 ## Description
 
