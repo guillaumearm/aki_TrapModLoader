@@ -50,17 +50,15 @@ function importMods() {
 
     // Used to check all errors before stopping the load execution
     let errorsFound = false;
-    // validate mods
-    for (const mod of mods) {
-        if (!ModLoader.validMod(mod)) {
-            Logger.error(`Invalid mod encountered ${mod}`);
-            return;
-        }
-    }
+
 
     const loadedMods = {};
     for (const mod of mods) {
-        loadedMods[mod] = JsonUtil.deserialize(VFS.readFile(`${ModLoader.getModPath(mod)}/package.json`));
+        if (ModLoader.validMod(mod)) {
+            loadedMods[mod] = JsonUtil.deserialize(VFS.readFile(`${ModLoader.getModPath(mod)}/package.json`));
+        } else {
+            Logger.error(`=> skipped loading: '${mod}' not found`)
+        }
     }
 
     for (const modToValidate of Object.values(loadedMods)) {
@@ -86,7 +84,9 @@ function importMods() {
 
     // add mods
     for (const mod of mods) {
-        ModLoader.addMod(mod);
+        if (ModLoader.validMod(mod)) {
+            ModLoader.addMod(mod);
+        }
     }
 
     return;
@@ -107,7 +107,8 @@ function getModlist() {
 function executeMods(modlist) {
     // import mod classes
     for (const mod of modlist) {
-        if ("main" in ModLoader.imported[mod]) {
+        const packageMod = ModLoader.imported[mod];
+        if (packageMod && "main" in ModLoader.imported[mod]) {
             ModLoader.importClass(mod, `${ModLoader.getModPath(mod)}${ModLoader.imported[mod].main}`);
         }
     }
@@ -126,7 +127,8 @@ function loadMods() {
 // ATF = Advanced Trader Framework
 function getATFModname(modlist) {
     for (const mod of modlist) {
-        if (ModLoader.imported[mod].name === ATF_ID) {
+        const packageMod = ModLoader.imported[mod];
+        if (packageMod && packageMod.name === ATF_ID) {
             return mod;
         }
     }
@@ -238,7 +240,7 @@ class TrapModLoader {
         // get all mods package.json
         importMods();
 
-        const modlist = getModlist();
+        const modlist = getModlist().filter(modName => ModLoader.validMod(modName));
 
         // import scripts
         executeMods(modlist);
