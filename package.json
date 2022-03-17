@@ -2,7 +2,7 @@
   "name": "TrapModLoader",
   "author": "trap",
   "version": "1.0.3",
-  "akiVersion": "2.2.*",
+  "akiVersion": "2.3.*",
   "license": "MIT",
   "main": "package.js"
 }
