@@ -1,0 +1,7 @@
+/types/
+/tmp/
+/dist/
+/src/*.js
+/TrapModLoader*
+*.md
+package-lock.json

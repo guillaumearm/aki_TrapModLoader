@@ -1,2 +1,4 @@
-/mods*
-/TrapModLoader*
+/tmp/
+/dist/
+/src/**/*.js
+TrapModLoader*
